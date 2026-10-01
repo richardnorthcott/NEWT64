@@ -245,7 +245,8 @@ endif()
 #
 
 # Require("protoFILE") loads protoFILE<DYLIBSUFFIX> from the NEWTLIB path with
-# dlopen(). The extensions call back into newt64, which exports its symbols.
+# dlopen(). The extensions call back into newt64, which exports its symbols
+# (ENABLE_EXPORTS: -rdynamic on Linux).
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	set (NEWT64_BUILD_EXTENSIONS_DEFAULT OFF)
@@ -263,7 +264,16 @@ if (NEWT64_BUILD_EXTENSIONS)
 		# Must match __DYLIBSUFFIX__ in the platform config.h, which is
 		# ".dylib" for every platform that uses incs/darwin.
 		set_target_properties (${ext} PROPERTIES PREFIX "" SUFFIX ".dylib")
-		target_link_libraries (${ext} PRIVATE newt64)
+		# Only the headers: linking libnewt64 in would give each extension
+		# its own copy of the interpreter (and fails where it is not PIC).
+		target_include_directories (${ext} PRIVATE
+			$<TARGET_PROPERTY:libnewt64,INTERFACE_INCLUDE_DIRECTORIES>
+		)
+		if (APPLE)
+			# check the NEWT functions against newt64 at link time
+			target_link_options (${ext} PRIVATE "LINKER:-bundle_loader,$<TARGET_FILE:newt64>")
+			add_dependencies (${ext} newt64)
+		endif ()
 	endforeach ()
 
 	# __LIBDIR__ in config.h: /usr/local/lib/newt64
