@@ -1292,7 +1292,8 @@ newtRef NsStrCat(newtRefArg rcvr, newtRefArg str, newtRefArg v)
             double	n;
             
             n = NewtRefToReal(v);
-            sprintf(wk, "%f", n);
+            // As Newton OS shows reals: 3.5 is "3.5", 1/3 is "0.333333", 0.0 is "0.0".
+            if (n == 0) strcpy(wk, "0.0"); else snprintf(wk, sizeof(wk), "%g", n);
             s = wk;
         }
             break;
