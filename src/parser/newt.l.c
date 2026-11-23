@@ -2607,18 +2607,30 @@ char * lex_escapestr(char *s)
         }
         else if (uni)
         {
-/*
-            *dst = lex_htoi(src, 4);
-            src += 4;
-            dst++;
-*/
-            *dst = lex_htoi(src, 2);
-            src += 2;
-            dst++;
+            // Strings are UTF-8, so a \u code unit is stored as UTF-8. It was
+            // stored as two raw bytes, so \u00E9 ended the string at the 00.
+            // Four hex digits become at most three bytes: dst stays behind src.
+            int c;
 
-            *dst = lex_htoi(src, 2);
-            src += 2;
-            dst++;
+            if (!src[1] || !src[2] || !src[3])
+                break;
+
+            c = lex_htoi(src, 4);
+            src += 4;
+
+            if (c < 0x80)
+                *dst++ = (char)c;
+            else if (c < 0x800)
+            {
+                *dst++ = (char)(0xC0 | (c >> 6));
+                *dst++ = (char)(0x80 | (c & 0x3F));
+            }
+            else
+            {
+                *dst++ = (char)(0xE0 | (c >> 12));
+                *dst++ = (char)(0x80 | ((c >> 6) & 0x3F));
+                *dst++ = (char)(0x80 | (c & 0x3F));
+            }
         }
         else
         {
