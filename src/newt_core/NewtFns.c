@@ -1302,7 +1302,10 @@ newtRef NsStrCat(newtRefArg rcvr, newtRefArg str, newtRefArg v)
             int		c;
             
             c = NewtRefToCharacter(v);
-            sprintf(wk, "%c", c);
+            // Strings are UTF-8: a character above 127 is encoded, not cut to one byte.
+            if (c < 0x80) sprintf(wk, "%c", c);
+            else if (c < 0x800) sprintf(wk, "%c%c", 0xC0 | (c >> 6), 0x80 | (c & 0x3F));
+            else sprintf(wk, "%c%c%c", 0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F));
             s = wk;
         }
             break;
