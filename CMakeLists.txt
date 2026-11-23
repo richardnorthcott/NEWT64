@@ -68,6 +68,7 @@ set (sources
 	src/newt_core/NewtIconv.c
 	src/newt_core/NewtIO.c
 	src/newt_core/NewtMem.c
+	src/newt_core/NewtNOS.c
 	src/newt_core/NewtNSOF.c
 	src/newt_core/NewtPkg.c
 	src/newt_core/NewtObj.c
@@ -107,6 +108,7 @@ set (headers
 	src/newt_core/incs/NewtIO.h
 	src/newt_core/incs/NewtLib.h
 	src/newt_core/incs/NewtMem.h
+	src/newt_core/incs/NewtNOS.h
 	src/newt_core/incs/NewtNSOF.h
 	src/newt_core/incs/NewtObj.h
 	src/newt_core/incs/NewtParser.h
