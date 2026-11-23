@@ -11,6 +11,9 @@
 
 
 /* ヘッダファイル */
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #include <string.h>
 
 #include "NewtErrs.h"
@@ -1292,7 +1295,8 @@ newtRef NsStrCat(newtRefArg rcvr, newtRefArg str, newtRefArg v)
             double	n;
             
             n = NewtRefToReal(v);
-            sprintf(wk, "%f", n);
+            // As Newton OS shows reals: 3.5 is "3.5", 1/3 is "0.333333", 0.0 is "0.0".
+            if (n == 0) strcpy(wk, "0.0"); else snprintf(wk, sizeof(wk), "%g", n);
             s = wk;
         }
             break;
@@ -1302,7 +1306,10 @@ newtRef NsStrCat(newtRefArg rcvr, newtRefArg str, newtRefArg v)
             int		c;
             
             c = NewtRefToCharacter(v);
-            sprintf(wk, "%c", c);
+            // Strings are UTF-8: a character above 127 is encoded, not cut to one byte.
+            if (c < 0x80) sprintf(wk, "%c", c);
+            else if (c < 0x800) sprintf(wk, "%c%c", 0xC0 | (c >> 6), 0x80 | (c & 0x3F));
+            else sprintf(wk, "%c%c%c", 0xE0 | ((c >> 12) & 0x0F), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F));
             s = wk;
         }
             break;
@@ -2080,6 +2087,29 @@ newtRef NsPrint(newtRefArg rcvr, newtRefArg r)
 {
     NewtPrint(stdout, r);
     return kNewtRefNIL;
+}
+
+
+/*------------------------------------------------------------------------*/
+/** Ends the program with a status, as exit(3)
+ *
+ * @param rcvr		[in] レシーバ
+ * @param r			[in] status code
+ *
+ * @return			does not return; on iOS, where an app must not exit,
+ *					it throws instead
+ */
+
+newtRef NsExit(newtRefArg rcvr, newtRefArg r)
+{
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+    (void) rcvr;
+    return NewtThrow(kNErrSystemError, r);
+#else
+    int64_t status = NewtRefIsInteger(r) ? NewtRefToInteger(r) : 0;
+    exit((int) status);
+    return kNewtRefNIL;
+#endif
 }
 
 

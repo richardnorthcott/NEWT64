@@ -912,6 +912,11 @@ newtRef NSOFReadFrame(nsof_stream_t * nsof)
     {
         slots[i] = NSOFReadNSOF(nsof);
         if (nsof->lastErr != kNErrNone) return kNewtRefUnbind;
+        // Mark a frame with a _proto slot, as NEWT does for frames it makes
+        // itself; without the flag, inheritance through _proto was never
+        // followed in frames read from NSOF.
+        if (NewtSymbolEqual(slots[i], NSSYM0(_proto)))
+            NewtSetMapFlags(map, kNewtMapProto);
     }
     
     slots = NewtRefToSlots(r);

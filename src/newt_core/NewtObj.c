@@ -2003,12 +2003,14 @@ newtRef NewtMakeThrowSymbol(int32_t err)
     int32_t		errbase;
     
     symstr = NSSTR("evt.ex.fr");
-    errbase = (err % 100) * 100;
+    // The base is the error rounded to hundreds. Object errors are evt.ex.fr,
+    // type errors evt.ex.fr.type, compiler errors evt.ex.fr.comp and
+    // interpreter errors evt.ex.fr.intrp, the names Newton OS uses.
+    errbase = (err / 100) * 100;
     
     switch (errbase)
     {
         case kNErrObjectBase:
-            NewtStrCat(symstr, ".obj");
             break;
             
         case kNErrBadTypeBase:
@@ -2016,7 +2018,7 @@ newtRef NewtMakeThrowSymbol(int32_t err)
             break;
             
         case kNErrCompilerBase:
-            NewtStrCat(symstr, ".compr");
+            NewtStrCat(symstr, ".comp");
             break;
             
         case kNErrInterpreterBase:
@@ -3670,8 +3672,18 @@ newtRef NewtGetStringSlot(newtRefArg r, uint32_t p)
     {
         char *	str;
         
+        uint8_t *	u;
+        
         str = NewtRefToString(r);
-        return NewtMakeCharacter(str[p]);
+        u = (uint8_t *)str + p;
+        // Strings are UTF-8 and indexed by byte. Where a multibyte character
+        // starts, give the whole character; elsewhere the unsigned byte (it
+        // was a sign-extended byte, so $\u00E9 read back as 0xFFFFFFC3).
+        if ((u[0] & 0xE0) == 0xC0 && p + 1 < len && (u[1] & 0xC0) == 0x80)
+            return NewtMakeCharacter(((u[0] & 0x1F) << 6) | (u[1] & 0x3F));
+        if ((u[0] & 0xF0) == 0xE0 && p + 2 < len && (u[1] & 0xC0) == 0x80 && (u[2] & 0xC0) == 0x80)
+            return NewtMakeCharacter(((u[0] & 0x0F) << 12) | ((u[1] & 0x3F) << 6) | (u[2] & 0x3F));
+        return NewtMakeCharacter(u[0]);
     }
     
     return kNewtRefUnbind;

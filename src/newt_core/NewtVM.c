@@ -16,6 +16,7 @@
 
 #include "NewtErrs.h"
 #include "NewtVM.h"
+#include "NewtNOS.h"
 #include "NewtBC.h"
 #include "NewtGC.h"
 #include "NewtMem.h"
@@ -483,7 +484,7 @@ newtRef NVMMakeExceptionFrame(newtRefArg name, newtRefArg data)
 
     if (NewtHasSubclass(name, NSSYM0(type.ref)))
         NcSetSlot(r, NSSYM0(data), data);
-    else if (NewtHasSubclass(name, NSSYM0(ext.ex.msg)))
+    else if (NewtHasSubclass(name, NSSYM0(evt.ex.msg)))
         NcSetSlot(r, NSSYM0(message), data);
     else
         NcSetSlot(r, NSSYM0(error), data);
@@ -3682,6 +3683,7 @@ void NVMInitExGlobalFns(void)
     NewtDefGlobalFunc(NSSYM(Gets),		NsGets,				0, "Gets()");
     NewtDefGlobalFunc(NSSYM(Getc),		NsGetc,				0, "Getc()");
     NewtDefGlobalFunc(NSSYM(Getch),		NsGetch,			0, "Getch()");
+    NewtDefGlobalFunc(NSSYM(Exit),		NsExit,				1, "Exit(status)");
 }
 
 
@@ -3749,6 +3751,30 @@ void NVMInit(void)
     NVMInitSTACK();
     NVMInitGlobalFns();
     NVMInitGlobalVars();
+    NewtNOSInstall();			// Newton OS 2.1 functions NEWT/0 lacks (NewtNOS.c)
+
+    // The NewtonScript part of NewtNOS.c, once; its globals outlive each run.
+    {
+        static bool	nosLibraryLoaded = false;
+
+        if (! nosLibraryLoaded)
+        {
+            newtRefVar	fn;
+            newtErr		nosErr = kNErrNone;
+
+            nosLibraryLoaded = true;
+            fn = NewtNOSLibraryFunction();
+
+            if (NewtRefIsNotNIL(fn))
+            {
+                result = NVMCall(fn, 0, &nosErr);
+                NVMClearCurrException();
+
+                if (result != kNewtRefUnbind)
+                    stk_pop();
+            }
+        }
+    }
 
     // 標準ライブラリのロード
     result = NcRequire0(NSSTR("egg"));

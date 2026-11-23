@@ -977,7 +977,9 @@ void NBCGenBC_stmt(nps_syntax_node_t * stree, nps_node_t r, bool ret)
         return;
     }
     
-    if (r != kNewtRefUnbind)
+    // A constant whose value is unused pushes nothing; it used to be pushed
+    // and never popped, so `while c do nil` grew the stack.
+    if (r != kNewtRefUnbind && ret)
         NBCGenPUSH(r);
 }
 
@@ -2215,7 +2217,9 @@ void NBCGenSyntaxCode(nps_syntax_node_t * stree, nps_syntax_node_t * node, bool 
     switch (node->code)
     {
         case kNPSConstituentList:
-            if (NewtRefIsNIL(node->op2))
+            // An absent next statement is unbound (NPSGenNode1); nil is the
+            // literal nil, so `begin x := 1; nil end` returns nil, not 1.
+            if (node->op2 == kNewtRefUnbind)
             {
                 NBCGenBC_stmt(stree, node->op1, ret);
             }

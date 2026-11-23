@@ -177,7 +177,7 @@ void NewtInitSYM(void)
     
     // exception type
     INITSYM(type.ref);
-    INITSYM(ext.ex.msg);
+    INITSYM(evt.ex.msg);
     
     // exception frame
     INITSYM(name);
