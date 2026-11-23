@@ -2524,7 +2524,15 @@ static keyword_t	operator_words[] = {
 
 int lex_update_tokenpos(int op)
 {
-	strncat(nps_env.linebuf, yytext, sizeof(nps_env.linebuf));
+	// Append only what still fits: strncat's count is the number of characters
+	// to append, so the buffer size overflowed it once a line passed 2048
+	// characters, corrupting the parser state that follows the buffer.
+	{
+		size_t used = strlen(nps_env.linebuf);
+
+		if (used + 1 < sizeof(nps_env.linebuf))
+			strncat(nps_env.linebuf, yytext, sizeof(nps_env.linebuf) - used - 1);
+	}
 
 	nps_env.tokenpos += yyleng;
 	nps_env.yyleng = yyleng;
