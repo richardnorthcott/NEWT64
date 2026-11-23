@@ -2003,12 +2003,14 @@ newtRef NewtMakeThrowSymbol(int32_t err)
     int32_t		errbase;
     
     symstr = NSSTR("evt.ex.fr");
-    errbase = (err % 100) * 100;
+    // The base is the error rounded to hundreds. Object errors are evt.ex.fr,
+    // type errors evt.ex.fr.type, compiler errors evt.ex.fr.comp and
+    // interpreter errors evt.ex.fr.intrp, the names Newton OS uses.
+    errbase = (err / 100) * 100;
     
     switch (errbase)
     {
         case kNErrObjectBase:
-            NewtStrCat(symstr, ".obj");
             break;
             
         case kNErrBadTypeBase:
@@ -2016,7 +2018,7 @@ newtRef NewtMakeThrowSymbol(int32_t err)
             break;
             
         case kNErrCompilerBase:
-            NewtStrCat(symstr, ".compr");
+            NewtStrCat(symstr, ".comp");
             break;
             
         case kNErrInterpreterBase:
