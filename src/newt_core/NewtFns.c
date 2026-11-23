@@ -11,6 +11,9 @@
 
 
 /* ヘッダファイル */
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 #include <string.h>
 
 #include "NewtErrs.h"
@@ -2084,6 +2087,29 @@ newtRef NsPrint(newtRefArg rcvr, newtRefArg r)
 {
     NewtPrint(stdout, r);
     return kNewtRefNIL;
+}
+
+
+/*------------------------------------------------------------------------*/
+/** Ends the program with a status, as exit(3)
+ *
+ * @param rcvr		[in] レシーバ
+ * @param r			[in] status code
+ *
+ * @return			does not return; on iOS, where an app must not exit,
+ *					it throws instead
+ */
+
+newtRef NsExit(newtRefArg rcvr, newtRefArg r)
+{
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+    (void) rcvr;
+    return NewtThrow(kNErrSystemError, r);
+#else
+    int64_t status = NewtRefIsInteger(r) ? NewtRefToInteger(r) : 0;
+    exit((int) status);
+    return kNewtRefNIL;
+#endif
 }
 
 
